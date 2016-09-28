@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # Preprocessing: mean substraction and denoising (by applying Gaussian blur)
     img = img - np.mean(img)
-    img_smooth = scipy.ndimage.filters.gaussian_filter(img, 0)
+    img_smooth = scipy.ndimage.filters.gaussian_filter(img, 2)
 
     # Derive image edge features f from its gradient
     dimg = np.gradient(img_smooth)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         if i % 10 == 0:
             plt.imshow(img, cmap='Greys_r')
             plt.hold(True)
-            plt.contour(phi, 0, colors='r')
+            plt.contour(phi, 0, colors='r', linewidths=[5])
             plt.draw()
             plt.hold(False)
             plt.show()
