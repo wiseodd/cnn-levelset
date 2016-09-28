@@ -4,3 +4,4 @@ dependencies:
 - numpy
 - scipy
 - matplotlib
+- scikit-image
