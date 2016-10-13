@@ -5,3 +5,5 @@ dependencies:
 - scipy
 - matplotlib
 - scikit-image
+- pip:
+    - xml2dict
