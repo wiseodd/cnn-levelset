@@ -1,7 +1,9 @@
+import numpy as np
 import pandas as pd
 import xmltodict
 from skimage import io
 from skimage import transform
+from skimage import draw
 
 
 class PascalVOC(object):
@@ -11,7 +13,7 @@ class PascalVOC(object):
     labels = [
         'person', 'bird', 'cat', 'cow', 'dog', 'horse', 'sheep',
         'aeroplane', 'bicycle', 'boat', 'bus', 'car', 'motorbike', 'train',
-        'bottle', 'chair', 'dining table', 'potted plant', 'sofa', 'tv/monitor'
+        'bottle', 'chair', 'diningtable', 'pottedplant', 'sofa', 'tvmonitor'
     ]
     label2idx = {lbl: idx for idx, lbl in enumerate(labels)}
     idx2label = {idx: lbl for idx, lbl in enumerate(labels)}
@@ -37,6 +39,17 @@ class PascalVOC(object):
         bbox = [self._get_bbox(img) for img in mb[self.img_idx]]
 
         return np.array(X), np.array(y, dtype=np.uint8), np.array(bbox)
+
+    def draw_bbox(self, img, bbox, color=[255, 0, 0]):
+        xmin, ymin, xmax, ymax = bbox
+        img_bbox = np.copy(img)
+
+        img_bbox[ymin-2:ymin+2, xmin:xmax] = color
+        img_bbox[ymax-2:ymax+2, xmin:xmax] = color
+        img_bbox[ymin:ymax, xmin-2:xmin+2] = color
+        img_bbox[ymin:ymax, xmax-2:xmax+2] = color
+
+        return img_bbox
 
     def _load(self):
         train_set = self._read_set(self.imageset_dir + '/train.txt')
@@ -75,14 +88,26 @@ class PascalVOC(object):
         with open(self._label_path(img_name), 'r') as f:
             xml = xmltodict.parse(f.read())
 
-        obj = xml['annotation']['object']
+        objs = xml['annotation']['object']
 
-        if type(obj) is list:
-            obj = obj[0]
+        if type(objs) is not list:
+            objs = [objs]
 
-        bbox = np.array(list(obj['bndbox'].values()), dtype=np.uint8)
+        def get_bbox(obj):
+            bndbox = obj['bndbox']
+            bbox = [bndbox['xmin'], bndbox['ymin'], bndbox['xmax'], bndbox['ymax']]
+            return np.array(bbox, dtype=np.uint16)
 
-        return np.array(bbox)
+        def bbox_area(bbox):
+            xmin, ymin, xmax, ymax = bbox
+            w = xmax - xmin
+            h = ymax - ymin
+            return w * h
+
+        bboxes = [get_bbox(obj) for obj in objs]
+        bboxes = sorted(bboxes, key=bbox_area, reverse=True)
+
+        return bboxes[0]
 
     def _resize_img(self, img, to_size=(224, 224), bbox=None):
         new_bbox = bbox
