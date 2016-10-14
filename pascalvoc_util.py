@@ -4,6 +4,7 @@ import xmltodict
 from skimage import io
 from skimage import transform
 from skimage import draw
+from collections import defaultdict
 
 
 class PascalVOC(object):
@@ -45,10 +46,9 @@ class PascalVOC(object):
             in mb[self.img_idx]
         ]
 
-        y = [self.get_class(img) for img in mb[self.img_idx]]
-        bbox = [self.get_bbox(img) for img in mb[self.img_idx]]
+        y = [np.column_stack(self.get_class_bbox(img)) for img in mb[self.img_idx]]
 
-        return np.array(X), np.array(y, dtype=np.uint8), np.array(bbox)
+        return np.array(X), np.array(y)
 
     def draw_bbox(self, img, bbox, color=[255, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
@@ -61,26 +61,7 @@ class PascalVOC(object):
 
         return img_bbox
 
-    def get_class(self, img_name):
-        with open(self._label_path(img_name), 'r') as f:
-            xml = xmltodict.parse(f.read())
-
-        obj = xml['annotation']['object']
-
-        if type(obj) is list:
-            obj = obj[0]
-
-        label = self.label2idx[obj['name']]
-
-        if self.onehot:
-            y = np.zeros_like(self.labels, dtype=np.uint8)
-            y[label] = 1
-        else:
-            y = label
-
-        return y
-
-    def get_bbox(self, img_name):
+    def get_class_bbox(self, img_name):
         with open(self._label_path(img_name), 'r') as f:
             xml = xmltodict.parse(f.read())
 
@@ -89,10 +70,17 @@ class PascalVOC(object):
         if type(objs) is not list:
             objs = [objs]
 
-        def get_bbox(obj):
+        clses = np.zeros_like(self.labels, dtype=np.float)
+        bboxes = np.zeros(shape=[len(self.labels), 4], dtype=np.float)
+        bbox_cls = defaultdict(list)
+
+        for obj in objs:
+            idx = self.label2idx[obj['name']]
+            clses[idx] = 1
+
             bndbox = obj['bndbox']
-            bbox = [bndbox['xmin'], bndbox['ymin'], bndbox['xmax'], bndbox['ymax']]
-            return np.array(bbox, dtype=np.uint16)
+            print(bndbox)
+            bbox_cls[idx].append(bbox)
 
         def bbox_area(bbox):
             xmin, ymin, xmax, ymax = bbox
@@ -100,10 +88,13 @@ class PascalVOC(object):
             h = ymax - ymin
             return w * h
 
-        bboxes = [get_bbox(obj) for obj in objs]
-        bboxes = sorted(bboxes, key=bbox_area, reverse=True)
+        print(bbox_cls)
 
-        return bboxes[0]
+        for k, v in bbox_cls.items():
+            max_bbox = sorted(bboxes, key=bbox_area, reverse=True)[0]
+            bboxes[k] = max_bbox
+
+        return clses, bboxes
 
     def resize_img(self, img, to_size=(224, 224), bbox=None):
         new_bbox = bbox
