@@ -7,6 +7,16 @@ from skimage import draw
 
 
 class PascalVOC(object):
+    """
+    Pascal VOC dataset utility.
+
+    Arguments
+    ---------
+        voc_idr: string
+            Indicating path of the Pascal VOC devkit.
+        y_onehot: bool, default True
+            Whether the class should be onehot encoded value or not
+    """
 
     img_idx = 0
     lbl_idx = 1
@@ -18,7 +28,7 @@ class PascalVOC(object):
     label2idx = {lbl: idx for idx, lbl in enumerate(labels)}
     idx2label = {idx: lbl for idx, lbl in enumerate(labels)}
 
-    def __init__(self, voc_dir='', y_onehot=True):
+    def __init__(self, voc_dir, y_onehot=True):
         self.voc_dir = voc_dir.rstrip('/')
         self.imageset_dir = voc_dir + '/ImageSets/Main'
         self.img_dir = voc_dir + '/JPEGImages'
@@ -35,37 +45,23 @@ class PascalVOC(object):
             in mb[self.img_idx]
         ]
 
-        y = [self._get_class(img) for img in mb[self.img_idx]]
-        bbox = [self._get_bbox(img) for img in mb[self.img_idx]]
+        y = [self.get_class(img) for img in mb[self.img_idx]]
+        bbox = [self.get_bbox(img) for img in mb[self.img_idx]]
 
         return np.array(X), np.array(y, dtype=np.uint8), np.array(bbox)
 
-    def draw_bbox(self, img, bbox, color=[255, 0, 0]):
+    def draw_bbox(self, img, bbox, color=[255, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
         img_bbox = np.copy(img)
 
-        img_bbox[ymin-2:ymin+2, xmin:xmax] = color
-        img_bbox[ymax-2:ymax+2, xmin:xmax] = color
-        img_bbox[ymin:ymax, xmin-2:xmin+2] = color
-        img_bbox[ymin:ymax, xmax-2:xmax+2] = color
+        img_bbox[ymin-line_width:ymin, xmin-line_width:xmax+line_width] = color
+        img_bbox[ymax:ymax+line_width, xmin-line_width:xmax+line_width] = color
+        img_bbox[ymin-line_width:ymax+line_width, xmin-line_width:xmin] = color
+        img_bbox[ymin-line_width:ymax+line_width, xmax:xmax+line_width] = color
 
         return img_bbox
 
-    def _load(self):
-        train_set = self._read_set(self.imageset_dir + '/train.txt')
-        test_set = self._read_set(self.imageset_dir + '/val.txt')
-        return train_set, test_set
-
-    def _read_set(self, filename):
-        return pd.read_csv(filename, header=None, delim_whitespace=True)
-
-    def _img_path(self, img):
-        return '{}/{}.jpg'.format(self.img_dir, img)
-
-    def _label_path(self, img):
-        return '{}/{}.xml'.format(self.bbox_dir, img)
-
-    def _get_class(self, img_name):
+    def get_class(self, img_name):
         with open(self._label_path(img_name), 'r') as f:
             xml = xmltodict.parse(f.read())
 
@@ -84,7 +80,7 @@ class PascalVOC(object):
 
         return y
 
-    def _get_bbox(self, img_name):
+    def get_bbox(self, img_name):
         with open(self._label_path(img_name), 'r') as f:
             xml = xmltodict.parse(f.read())
 
@@ -109,7 +105,7 @@ class PascalVOC(object):
 
         return bboxes[0]
 
-    def _resize_img(self, img, to_size=(224, 224), bbox=None):
+    def resize_img(self, img, to_size=(224, 224), bbox=None):
         new_bbox = bbox
 
         if bbox is not None:
@@ -122,3 +118,17 @@ class PascalVOC(object):
         new_img = transform.resize(img, output_shape=to_size, preserve_range=True)
 
         return new_img, new_bbox
+
+    def _load(self):
+        train_set = self._read_dataset(self.imageset_dir + '/train.txt')
+        test_set = self._read_dataset(self.imageset_dir + '/val.txt')
+        return train_set, test_set
+
+    def _read_dataset(self, filename):
+        return pd.read_csv(filename, header=None, delim_whitespace=True)
+
+    def _img_path(self, img):
+        return '{}/{}.jpg'.format(self.img_dir, img)
+
+    def _label_path(self, img):
+        return '{}/{}.xml'.format(self.bbox_dir, img)
