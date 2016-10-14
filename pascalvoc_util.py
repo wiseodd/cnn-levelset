@@ -79,7 +79,6 @@ class PascalVOC(object):
             clses[idx] = 1
 
             bndbox = obj['bndbox']
-            print(bndbox)
             bbox_cls[idx].append(bbox)
 
         def bbox_area(bbox):
@@ -87,8 +86,6 @@ class PascalVOC(object):
             w = xmax - xmin
             h = ymax - ymin
             return w * h
-
-        print(bbox_cls)
 
         for k, v in bbox_cls.items():
             max_bbox = sorted(bboxes, key=bbox_area, reverse=True)[0]
