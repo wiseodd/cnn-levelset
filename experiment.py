@@ -4,7 +4,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2
 from keras.layers.normalization import BatchNormalization
 from keras.callbacks import ModelCheckpoint
 from keras.regularizers import l2
-from pascalvoc_util import PascalVOC
+from cnnlevelset.pascalvoc_util import PascalVOC
 
 import sys
 import tensorflow as tf

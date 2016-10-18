@@ -1,4 +1,4 @@
-name: levelset
+name: cnn-levelset
 dependencies:
 - python=3.5
 - numpy
