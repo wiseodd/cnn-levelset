@@ -3,7 +3,10 @@ dependencies:
 - python=3.5
 - numpy
 - scipy
+- pandas
 - matplotlib
 - scikit-image
+- h5py
 - pip:
-    - xml2dict
+    - xmltodict
+    - keras

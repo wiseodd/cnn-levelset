@@ -15,8 +15,6 @@ class PascalVOC(object):
     ---------
         voc_idr: string
             Indicating path of the Pascal VOC devkit.
-        y_onehot: bool, default True
-            Whether the class should be onehot encoded value or not
     """
 
     img_idx = 0
@@ -28,25 +26,35 @@ class PascalVOC(object):
     ]
     label2idx = {lbl: idx for idx, lbl in enumerate(labels)}
     idx2label = {idx: lbl for idx, lbl in enumerate(labels)}
+    img_size = (112, 112)
 
-    def __init__(self, voc_dir, y_onehot=True):
+    def __init__(self, voc_dir):
         self.voc_dir = voc_dir.rstrip('/')
         self.imageset_dir = voc_dir + '/ImageSets/Main'
         self.img_dir = voc_dir + '/JPEGImages'
         self.bbox_dir = voc_dir + '/Annotations'
         self.train_set, self.test_set = self._load()
-        self.onehot = y_onehot
 
     def next_minibatch(self, size):
         mb = self.train_set.sample(size)
+        return self.load_data(mb)
 
-        X = [
-            io.imread(self._img_path(img))
-            for img
-            in mb[self.img_idx]
-        ]
+    def get_test_set(self, size, random=True):
+        if random:
+            imgs = self.test_set.sample(size)
+        else:
+            imgs = self.test_set.head(size)
 
-        y = [np.column_stack(self.get_class_bbox(img)) for img in mb[self.img_idx]]
+        return self.load_data(imgs)
+
+    def load_data(self, img_names):
+        X = [transform.resize(io.imread(self._img_path(img)), self.img_size)
+             for img
+             in img_names[self.img_idx]]
+
+        y = [np.column_stack(self.get_class_bbox(img))
+             for img
+             in img_names[self.img_idx]]
 
         return np.array(X), np.array(y)
 
@@ -65,6 +73,9 @@ class PascalVOC(object):
         with open(self._label_path(img_name), 'r') as f:
             xml = xmltodict.parse(f.read())
 
+        img_size = xml['annotation']['size']
+        img_w, img_h = float(img_size['width']), float(img_size['height'])
+
         objs = xml['annotation']['object']
 
         if type(objs) is not list:
@@ -79,6 +90,13 @@ class PascalVOC(object):
             clses[idx] = 1
 
             bndbox = obj['bndbox']
+            bbox = [
+                float(bndbox['xmin']) / img_w,
+                float(bndbox['ymin']) / img_h,
+                float(bndbox['xmax']) / img_w,
+                float(bndbox['ymax']) / img_h
+            ]
+            bbox = np.array(bbox, dtype=np.float)
             bbox_cls[idx].append(bbox)
 
         def bbox_area(bbox):
@@ -88,24 +106,10 @@ class PascalVOC(object):
             return w * h
 
         for k, v in bbox_cls.items():
-            max_bbox = sorted(bboxes, key=bbox_area, reverse=True)[0]
+            max_bbox = sorted(v, key=bbox_area, reverse=True)[0]
             bboxes[k] = max_bbox
 
         return clses, bboxes
-
-    def resize_img(self, img, to_size=(224, 224), bbox=None):
-        new_bbox = bbox
-
-        if bbox is not None:
-            x, y, w, h = bbox
-            img_w, img_h = img.shape[:2]
-            new_w, new_h = to_size
-            rw, rh = new_w / img_w, new_h / img_h
-            new_bbox = (x * rw, y * rh, w * rw, h * rh)
-
-        new_img = transform.resize(img, output_shape=to_size, preserve_range=True)
-
-        return new_img, new_bbox
 
     def _load(self):
         train_set = self._read_dataset(self.imageset_dir + '/train.txt')

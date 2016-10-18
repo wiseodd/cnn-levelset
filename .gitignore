@@ -87,3 +87,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+data/model.h5
+data/MNIST_data
