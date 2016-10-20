@@ -1,5 +1,5 @@
 from keras.applications.resnet50 import ResNet50
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.layers import Input, Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
@@ -34,29 +34,32 @@ def reg_loss(y_true, y_pred):
 
 class Localizer(object):
 
-    def __init__(self):
-        inputs = Input(shape=(224, 224, 3))
-        base_model = ResNet50(include_top=False, weights='imagenet', input_tensor=inputs)
+    def __init__(self, load=False):
+        if load:
+            self.model = load_model(MODEL_PATH, custom_objects={'reg_loss': reg_loss})
+        else:
+            inputs = Input(shape=(224, 224, 3))
+            base_model = ResNet50(include_top=False, weights='imagenet', input_tensor=inputs)
 
-        for layer in base_model.layers:
-            layer.trainable = False
+            for layer in base_model.layers:
+                layer.trainable = False
 
-        x = base_model.output
-        x = Flatten()(x)
-        x = Dense(1024, activation='relu')(x)
-        x = Dropout(0.5)(x)
+            x = base_model.output
+            x = Flatten()(x)
+            x = Dense(1024, activation='relu')(x)
+            x = Dropout(0.5)(x)
 
-        # Classification head; Output: 20-way sigmoid
-        cls_head = Dense(20, activation='sigmoid', name='cls')(x)
+            # Classification head; Output: 20-way sigmoid
+            cls_head = Dense(20, activation='sigmoid', name='cls')(x)
 
-        # Regression head; Output: 20 classes x 4 regression points
-        reg_head = Dense(80, activation='linear', name='reg')(x)
+            # Regression head; Output: 20 classes x 4 regression points
+            reg_head = Dense(80, activation='linear', name='reg')(x)
 
-        self.model = Model(input=base_model.input, output=[cls_head, reg_head])
-        self.model.compile(optimizer='adam',
-                           loss={'cls': 'binary_crossentropy', 'reg': reg_loss},
-                           loss_weights={'cls': 1., 'reg': 1.},
-                           metrics={'cls': 'accuracy'})
+            self.model = Model(input=base_model.input, output=[cls_head, reg_head])
+            self.model.compile(optimizer='adam',
+                               loss={'cls': 'binary_crossentropy', 'reg': reg_loss},
+                               loss_weights={'cls': 1., 'reg': 1.},
+                               metrics={'cls': 'accuracy'})
 
     def train(self, data_generator, nb_epoch=10):
         self.model.fit_generator(generator=data_generator,
@@ -66,3 +69,6 @@ class Localizer(object):
 
     def predict(self, X):
         return self.model.predict(X)
+
+    def load_model(self):
+        self.model = load_model(MODEL_PATH, custom_objects={'reg_loss': reg_loss})
