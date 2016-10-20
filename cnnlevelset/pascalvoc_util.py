@@ -26,7 +26,7 @@ class PascalVOC(object):
     ]
     label2idx = {lbl: idx for idx, lbl in enumerate(labels)}
     idx2label = {idx: lbl for idx, lbl in enumerate(labels)}
-    img_size = (112, 112)
+    img_size = (224, 224)
 
     def __init__(self, voc_dir):
         self.voc_dir = voc_dir.rstrip('/')
@@ -58,8 +58,15 @@ class PascalVOC(object):
 
         return np.array(X), np.array(y)
 
-    def draw_bbox(self, img, bbox, color=[255, 0, 0], line_width=3):
+    def draw_bbox(self, img, bbox, color=[1, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
+        w, h = img.shape[:2]
+
+        xmin = int(round(xmin * w))
+        xmax = int(round(xmax * w))
+        ymin = int(round(ymin * h))
+        ymax = int(round(ymax * h))
+
         img_bbox = np.copy(img)
 
         img_bbox[ymin-line_width:ymin, xmin-line_width:xmax+line_width] = color
