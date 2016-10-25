@@ -7,6 +7,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.regularizers import l2
 from .config import *
 
+import keras.backend as K
 import tensorflow as tf
 import numpy as np
 
@@ -28,15 +29,19 @@ def smooth_l1(x):
 
 
 def reg_loss(y_true, y_pred):
-    loss = smooth_l1(y_true - y_pred)
-    return tf.reduce_mean(loss)
+    y_pred = tf.reshape(y_pred, shape=[-1, 20, 4])
+    y_true = tf.reshape(y_true, shape=[-1, 20, 4])
+    sum_sqr = K.sum(K.square(y_true - y_pred), axis=2)
+    return K.sum(sum_sqr, axis=1)
 
 
 class Localizer(object):
 
+    custom_objs = {'reg_loss': reg_loss}
+
     def __init__(self, load=False):
         if load:
-            self.model = load_model(MODEL_PATH, custom_objects={'reg_loss': reg_loss})
+            self.model = load_model(MODEL_PATH, custom_objects=self.custom_objs)
         else:
             inputs = Input(shape=(224, 224, 3))
             base_model = ResNet50(include_top=False, weights='imagenet', input_tensor=inputs)
@@ -44,15 +49,20 @@ class Localizer(object):
             for layer in base_model.layers:
                 layer.trainable = False
 
+            # Classification head; Output: 20-way sigmoid
             x = base_model.output
             x = Flatten()(x)
-            x = Dense(1024, activation='relu')(x)
+            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(x)
             x = Dropout(0.5)(x)
-
-            # Classification head; Output: 20-way sigmoid
+            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(x)
+            x = Dropout(0.5)(x)
             cls_head = Dense(20, activation='sigmoid', name='cls')(x)
 
             # Regression head; Output: 20 classes x 4 regression points
+            x = base_model.output
+            x = Flatten()(x)
+            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(x)
+            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(x)
             reg_head = Dense(80, activation='linear', name='reg')(x)
 
             self.model = Model(input=base_model.input, output=[cls_head, reg_head])
@@ -71,4 +81,4 @@ class Localizer(object):
         return self.model.predict(X)
 
     def load_model(self):
-        self.model = load_model(MODEL_PATH, custom_objects={'reg_loss': reg_loss})
+        self.model = load_model(MODEL_PATH, custom_objects=self.custom_objs)
