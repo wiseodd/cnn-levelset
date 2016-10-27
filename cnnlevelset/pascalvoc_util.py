@@ -113,14 +113,15 @@ class PascalVOC(object):
             return w * h
 
         for k, v in bbox_cls.items():
-            max_bbox = sorted(v, key=bbox_area, reverse=True)[0]
-            bboxes[k] = max_bbox
+            sample_idx = np.random.randint(0, len(v))
+            bboxes[k] = v[sample_idx]
 
         return clses, bboxes
 
     def _load(self):
-        train_set = self._read_dataset(self.imageset_dir + '/train.txt')
+        train_set = self._read_dataset(self.imageset_dir + '/train_singleobj.txt')
         test_set = self._read_dataset(self.imageset_dir + '/val.txt')
+
         return train_set, test_set
 
     def _read_dataset(self, filename):

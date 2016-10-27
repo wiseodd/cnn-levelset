@@ -90,3 +90,4 @@ ENV/
 
 data/model.h5
 data/MNIST_data
+logs
