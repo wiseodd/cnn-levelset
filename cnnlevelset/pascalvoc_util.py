@@ -60,7 +60,7 @@ class PascalVOC(object):
 
     def draw_bbox(self, img, bbox, color=[1, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
-        w, h = img.shape[:2]
+        h, w = img.shape[:2]
 
         xmin = int(round(xmin * w))
         xmax = int(round(xmax * w))
@@ -97,20 +97,10 @@ class PascalVOC(object):
             clses[idx] = 1
 
             bndbox = obj['bndbox']
-            bbox = [
-                float(bndbox['xmin']) / img_w,
-                float(bndbox['ymin']) / img_h,
-                float(bndbox['xmax']) / img_w,
-                float(bndbox['ymax']) / img_h
-            ]
+            bbox = (bndbox['xmin'], bndbox['ymin'], bndbox['xmax'], bndbox['ymax'])
+            bbox = self._normalize_bbox(bbox, (img_w, img_h))
             bbox = np.array(bbox, dtype=np.float)
             bbox_cls[idx].append(bbox)
-
-        def bbox_area(bbox):
-            xmin, ymin, xmax, ymax = bbox
-            w = xmax - xmin
-            h = ymax - ymin
-            return w * h
 
         for k, v in bbox_cls.items():
             sample_idx = np.random.randint(0, len(v))
@@ -119,7 +109,8 @@ class PascalVOC(object):
         return clses, bboxes
 
     def _load(self):
-        train_set = self._read_dataset(self.imageset_dir + '/train_singleobj.txt')
+        # train_set = self._read_dataset(self.imageset_dir + '/train_singleobj.txt')
+        train_set = self._read_dataset('data/train_singleobj.txt')
         test_set = self._read_dataset(self.imageset_dir + '/val.txt')
 
         return train_set, test_set
@@ -132,3 +123,15 @@ class PascalVOC(object):
 
     def _label_path(self, img):
         return '{}/{}.xml'.format(self.bbox_dir, img)
+
+    def _normalize_bbox(self, bbox, img_dim):
+        w, h = img_dim
+        xmin, ymin, xmax, ymax = bbox
+
+        def normalize(x, s):
+            return float(x) / s
+
+        xmin, ymin = normalize(xmin, w), normalize(ymin, h)
+        xmax, ymax = normalize(xmax, w), normalize(ymax, h)
+
+        return [xmin, ymin, xmax, ymax]
