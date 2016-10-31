@@ -11,4 +11,4 @@ CNN Level Set for image segmentation.
 2. Do `conda env create`
 3. Enter the env `source activate cnn-levelset`
 4. Install [TensorFlow](https://www.tensorflow.org/versions/r0.11/get_started/os_setup.html), or for CPU, run `chmod +x tools/setup_tf.sh && ./setup_tf.sh`
-5. Run `python experiment.py`
+5. Run `python experiment_{localizer|segmenter}.py`
