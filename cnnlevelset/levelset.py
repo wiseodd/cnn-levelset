@@ -10,15 +10,23 @@ def imshow(img):
     plt.show()
 
 
+def dot(x, y, axis=0):
+    return np.sum(x * y, axis=axis)
+
+
+def grad(x):
+    return np.array(np.gradient(x))
+
+
 def norm(x):
     return np.sqrt(np.sum(np.square(x), axis=0))
 
 
 def curvature(phi):
-    dphi = np.gradient(phi)
+    dphi = grad(phi)
     dphiy, dphix = dphi
-    dphiyy, dphiyx = np.gradient(dphiy)
-    dphixy, dphixx = np.gradient(dphix)
+    dphiyy, dphiyx = grad(dphiy)
+    dphixy, dphixx = grad(dphix)
 
     kappa = (dphixx*dphiy**2 - 2*dphix*dphiy*dphixy + dphiyy*dphix**2) / (1. + norm(dphi)**3)
 
@@ -26,7 +34,7 @@ def curvature(phi):
 
 
 def stopping_fun(img):
-    return 1. / (1. + norm(np.gradient(img))**2)
+    return 1. / (1. + norm(grad(img))**2)
 
 
 dt = 1.
@@ -45,7 +53,7 @@ if __name__ == '__main__':
     img_smooth = scipy.ndimage.filters.gaussian_filter(img, 2)
 
     g = stopping_fun(img_smooth)
-    dg = np.gradient(g)
+    dg = grad(g)
 
     # Initialize surface function phi
     # 5px from image border with value 5 and -5 elsewhere
@@ -55,19 +63,12 @@ if __name__ == '__main__':
 
     for i in range(100):
         # Calculate grad phi's norm
-        dphi = np.gradient(phi)
-
-        dphiy, dphix = dphi
-        dphiyy, dphiyx = np.gradient(dphiy)
-        dphixy, dphixx = np.gradient(dphix)
-        kappa = curvature(phi)
-
+        dphi = grad(phi)
         dphi_norm = norm(dphi)
         kappa = curvature(phi)
-        dot = dg[0]*dphi[0] + dg[1]*dphi[1]
 
         # Solve level set equation's PDE
-        phi = phi + dt * (g*dphi_norm + g*kappa*dphi_norm + dot)
+        phi = phi + dt * (g*dphi_norm + g*kappa*dphi_norm + dot(dg, dphi))
 
         if i % 10 == 0:
             plt.imshow(img, cmap='Greys_r')
