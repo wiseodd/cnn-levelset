@@ -34,9 +34,21 @@ class PascalVOC(object):
         self.img_dir = voc_dir + '/JPEGImages'
         self.bbox_dir = voc_dir + '/Annotations'
         self.train_set, self.test_set = self._load()
+        self.mb_idx = 0
 
-    def next_minibatch(self, size):
-        mb = self.train_set.sample(size)
+    def next_minibatch(self, size, random=True, reset=False):
+        if random:
+            mb = self.train_set.sample(size)
+        else:
+            if reset:
+                self.mb_idx = 0
+
+            mb = self.train_set[self.mb_idx:self.mb_idx+size]
+            self.mb_idx += size
+
+            if self.mb_idx >= self.train_set.size:
+                self.mb_idx = 0
+
         return self.load_data(mb)
 
     def get_test_set(self, size, random=True):
@@ -109,7 +121,6 @@ class PascalVOC(object):
         return clses, bboxes
 
     def _load(self):
-        # train_set = self._read_dataset(self.imageset_dir + '/train_singleobj.txt')
         train_set = self._read_dataset('data/train_singleobj.txt')
         test_set = self._read_dataset(self.imageset_dir + '/val.txt')
 

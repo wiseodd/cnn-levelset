@@ -28,14 +28,17 @@ def pascal_datagen(mb_size, include_reg=True, flatten=False, separate_reg=True):
             yield X, y_cls
 
 
-def pascal_datagen_singleobj(mb_size):
+def pascal_datagen_singleobj(mb_size, include_label=True, random=True):
     while True:
-        X, y = pascal.next_minibatch(size=mb_size)
+        X, y = pascal.next_minibatch(size=mb_size, random=random)
 
-        y_cls = y[:, :, 0]
-        y_reg = y[:, :, 1:]
+        if include_label:
+            y_cls = y[:, :, 0]
+            y_reg = y[:, :, 1:]
 
-        idxes = np.argmax(y_cls, axis=1)
-        y_reg = y_reg[range(mb_size), idxes]
+            idxes = np.argmax(y_cls, axis=1)
+            y_reg = y_reg[range(mb_size), idxes]
 
-        yield X, [y_cls, y_reg]
+            yield X, [y_cls, y_reg]
+        else:
+            yield X
