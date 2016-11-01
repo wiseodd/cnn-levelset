@@ -30,11 +30,18 @@ class PascalVOC(object):
 
     def __init__(self, voc_dir):
         self.voc_dir = voc_dir.rstrip('/')
-        self.imageset_dir = voc_dir + '/ImageSets/Main'
+        self.imageset_dir = './data/'
         self.img_dir = voc_dir + '/JPEGImages'
         self.bbox_dir = voc_dir + '/Annotations'
+        self.feature_dir = './data/features/'
+        self.label_dir = './data/labels/'
+        self.feature_prefix = 'cnn_features_'
+        self.label_prefix = 'labels_'
+        self.train_set_name = 'train_singleobj.txt'
+        self.test_set_name = 'test.txt'
         self.train_set, self.test_set = self._load()
         self.mb_idx = 0
+        self.X_train, self.y_train = self.load_train_data()
 
     def next_minibatch(self, size, random=True, reset=False):
         if random:
@@ -51,6 +58,18 @@ class PascalVOC(object):
 
         return self.load_data(mb)
 
+    def load_train_data(self):
+        dataset_name = self.train_set_name.split('.')[0]
+        X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')
+        y = np.load(self.label_dir + self.label_prefix + dataset_name + '.npy')
+        return X, y
+
+    def load_test_data(self):
+        dataset_name = self.test_set_name.split('.')[0]
+        X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')
+        y = np.load(self.label_dir + self.label_prefix + dataset_name + '.npy')
+        return X, y
+
     def get_test_set(self, size, random=True):
         if random:
             imgs = self.test_set.sample(size)
@@ -59,7 +78,11 @@ class PascalVOC(object):
 
         return self.load_data(imgs)
 
-    def load_data(self, img_names):
+    def load_data(self, mb):
+        idx = mb.index.tolist()
+        return self.X_train[idx], self.y_train[idx]
+
+    def load_data_raw(self, img_names):
         X = [transform.resize(io.imread(self._img_path(img)), self.img_size)
              for img
              in img_names[self.img_idx]]
@@ -69,6 +92,13 @@ class PascalVOC(object):
              in img_names[self.img_idx]]
 
         return np.array(X), np.array(y)
+
+    def load_label(self, img_names):
+        y = [np.column_stack(self.get_class_bbox(img))
+             for img
+             in img_names[self.img_idx]]
+
+        return np.array(y)
 
     def draw_bbox(self, img, bbox, color=[1, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
@@ -121,8 +151,8 @@ class PascalVOC(object):
         return clses, bboxes
 
     def _load(self):
-        train_set = self._read_dataset('data/train_singleobj.txt')
-        test_set = self._read_dataset(self.imageset_dir + '/val.txt')
+        train_set = self._read_dataset(self.imageset_dir + self.train_set_name)
+        test_set = self._read_dataset(self.imageset_dir + self.test_set_name)
 
         return train_set, test_set
 
