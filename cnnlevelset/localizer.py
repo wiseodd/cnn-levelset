@@ -50,28 +50,27 @@ class Localizer(object):
 
     def __init__(self, load=False):
         if load:
-            self.model = load_model(MODEL_PATH, custom_objects=self.custom_objs)
+            self.load_model()
         else:
-            inputs = Input(shape=(224, 224, 3))
-            base_model = ResNet50(include_top=False, weights='imagenet', input_tensor=inputs)
+            # VGG16 last conv features
+            inputs = Input(shape=(7, 7, 512))
 
-            for layer in base_model.layers:
-                layer.trainable = False
-
-            conv_feature = Flatten()(base_model.output)
-
-            # Classification head
-            x = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
+            # Cls head
+            x = Convolution2D(128, 1, 1)(inputs)
+            x = Flatten()(x)
+            x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
+            x = Dropout(p=0.5)(x)
             cls_head = Dense(20, activation='softmax', name='cls')(x)
 
-            # Regression head
-            x = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
+            # Reg head
+            x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
             reg_head = Dense(4, activation='linear', name='reg')(x)
 
-            self.model = Model(input=base_model.input, output=[cls_head, reg_head])
+            # Joint model
+            self.model = Model(input=inputs, output=[cls_head, reg_head])
 
-    def train(self, data_generator, optimizer='adam', nb_epoch=10):
-        self.model.compile(optimizer=optimizer,
+    def train(self, X, y, val_split=0.1, optimizer='adam', nb_epoch=10):
+        self.model.compile(optimizer='adam',
                            loss={'cls': 'categorical_crossentropy', 'reg': reg_loss},
                            loss_weights={'cls': 1., 'reg': 1.},
                            metrics={'cls': 'accuracy'})
@@ -80,10 +79,9 @@ class Localizer(object):
                      TensorBoard(),
                      LearningRateScheduler(scheduler)]
 
-        self.model.fit_generator(generator=data_generator,
-                                 samples_per_epoch=4800,
-                                 nb_epoch=nb_epoch,
-                                 callbacks=callbacks)
+        self.model.fit(X, y, batch_size=64, nb_epoch=80,
+                       validation_split=val_split,
+                       callbacks=callbacks)
 
     def predict(self, X):
         return self.model.predict(X)

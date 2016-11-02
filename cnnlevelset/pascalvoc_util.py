@@ -37,53 +37,30 @@ class PascalVOC(object):
         self.label_dir = './data/labels/'
         self.feature_prefix = 'vgg_features_'
         self.label_prefix = 'labels_'
-        self.train_set_name = 'train_singleobj.txt'
-        self.test_set_name = 'test.txt'
-        self.train_set, self.test_set = self._load()
+        self.trainset_singleobj_name = 'train_singleobj.txt'
+        self.trainset_multiobj_name = 'trainval.txt'
+        self.testset_name = 'test.txt'
+        self.train_singleobj, self.train_multiobj, self.test_set = self._load()
         self.mb_idx = 0
-        self.X_train, self.y_train = self.load_train_data()
 
-    def next_minibatch(self, size, random=True, reset=False):
+    def next_image_minibatch(self, size, random=True, reset=False, mode='single'):
+        assert mode in ('single', 'multi')
+
+        X = self.train_singleobj if mode == 'single' else self.train_multiobj
+
         if random:
-            mb = self.train_set.sample(size)
+            mb = X.sample(size)
         else:
             if reset:
                 self.mb_idx = 0
 
-            mb = self.train_set[self.mb_idx:self.mb_idx+size]
+            mb = X[self.mb_idx:self.mb_idx+size]
             self.mb_idx += size
 
-            if self.mb_idx >= self.train_set.size:
+            if self.mb_idx >= X.size:
                 self.mb_idx = 0
 
-        return self.load_data(mb)
-
-    def next_image_minibatch(self, size, random=True, reset=False):
-        if random:
-            mb = self.train_set.sample(size)
-        else:
-            if reset:
-                self.mb_idx = 0
-
-            mb = self.train_set[self.mb_idx:self.mb_idx+size]
-            self.mb_idx += size
-
-            if self.mb_idx >= self.train_set.size:
-                self.mb_idx = 0
-
-        return self.load_data_raw(mb)
-
-    def load_train_data(self):
-        dataset_name = self.train_set_name.split('.')[0]
-        X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')
-        y = np.load(self.label_dir + self.label_prefix + dataset_name + '.npy')
-        return X, y
-
-    def load_test_data(self):
-        dataset_name = self.test_set_name.split('.')[0]
-        X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')
-        y = np.load(self.label_dir + self.label_prefix + dataset_name + '.npy')
-        return X, y
+        return self.load_images_annotations(mb)
 
     def get_test_set(self, size, random=True):
         if random:
@@ -93,11 +70,7 @@ class PascalVOC(object):
 
         return self.load_data(imgs)
 
-    def load_data(self, mb):
-        idx = mb.index.tolist()
-        return self.X_train[idx], self.y_train[idx]
-
-    def load_data_raw(self, img_names):
+    def load_images_annotations(self, img_names):
         X = [transform.resize(io.imread(self._img_path(img)), self.img_size)
              for img
              in img_names[self.img_idx]]
@@ -107,13 +80,6 @@ class PascalVOC(object):
              in img_names[self.img_idx]]
 
         return np.array(X), np.array(y)
-
-    def load_label(self, img_names):
-        y = [np.column_stack(self.get_class_bbox(img))
-             for img
-             in img_names[self.img_idx]]
-
-        return np.array(y)
 
     def draw_bbox(self, img, bbox, color=[1, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox
@@ -165,11 +131,27 @@ class PascalVOC(object):
 
         return clses, bboxes
 
-    def _load(self):
-        train_set = self._read_dataset(self.imageset_dir + self.train_set_name)
-        test_set = self._read_dataset(self.imageset_dir + self.test_set_name)
+    def load_features_train_singleobj(self):
+        return self._load_features(self.trainset_singleobj_name)
 
-        return train_set, test_set
+    def load_features_train_multiobj(self):
+        return self._load_features(self.trainset_multiobj_name)
+
+    def load_features_test(self):
+        return self._load_features(self.testset_name)
+
+    def _load_features(self, dataset_name):
+        dataset_name = dataset_name.split('.')[0]
+        X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')
+        y = np.load(self.label_dir + self.label_prefix + dataset_name + '.npy')
+        return X, y
+
+    def _load(self):
+        train_singleobj = self._read_dataset(self.imageset_dir + self.trainset_singleobj_name)
+        train_multiobj = self._read_dataset(self.imageset_dir + self.trainset_multiobj_name)
+        test = self._read_dataset(self.imageset_dir + self.testset_name)
+
+        return train_singleobj, train_multiobj, test
 
     def _read_dataset(self, filename):
         return pd.read_csv(filename, header=None, delim_whitespace=True)

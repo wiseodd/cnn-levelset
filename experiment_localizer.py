@@ -12,6 +12,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+tf.python.control_flow_ops = tf
+
 m = 64
 nb_epoch = 20
 pascal = PascalVOC(voc_dir=cfg.PASCAL_PATH)
@@ -19,8 +21,6 @@ pascal = PascalVOC(voc_dir=cfg.PASCAL_PATH)
 if len(sys.argv) > 1:
     if sys.argv[1] == 'test':
         localizer = Localizer(load=True)
-
-        model = localizer.model
         X_test, y_test = pascal.get_test_set(20, random=True)
 
         cls_preds, bbox_preds = model.predict(X_test)
@@ -44,13 +44,15 @@ if len(sys.argv) > 1:
             imshow(pascal.draw_bbox(img, bbox_pred))
             plt.show()
 
-    elif sys.argv[1] == 'train':
-        adam = Adam(lr=1e-5)
-
-        localizer = Localizer(load=True)
-        localizer.train(pascal_datagen(m), optimizer=adam, nb_epoch=nb_epoch)
-
     sys.exit(0)
 
+X_train, y_train = pascal.load_features_train_singleobj()
+
+y_cls = y_train[:, :, 0]
+y_reg = y_train[:, :, 1:]
+idxes = np.argmax(y_cls, axis=1)
+y_reg = y_reg[range(y_train.shape[0]), idxes]
+y_train = [y_cls, y_reg]
+
 localizer = Localizer()
-localizer.train(pascal_datagen_singleobj(m), nb_epoch=nb_epoch)
+localizer.train(X_train, y_train, nb_epoch=nb_epoch)
