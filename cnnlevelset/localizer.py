@@ -32,13 +32,13 @@ def reg_loss(y_true, y_pred):
 
 
 def scheduler(epoch):
-    if 0 <= epoch < 5:
+    if 0 <= epoch < 80:
         return 1e-3
 
-    if 5 <= epoch < 10:
+    if 80 <= epoch < 120:
         return 1e-4
 
-    if 10 <= epoch < 15:
+    if 120 <= epoch < 150:
         return 1e-5
 
     return 1e-6
