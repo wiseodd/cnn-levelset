@@ -35,7 +35,7 @@ class PascalVOC(object):
         self.bbox_dir = voc_dir + '/Annotations'
         self.feature_dir = './data/features/'
         self.label_dir = './data/labels/'
-        self.feature_prefix = 'cnn_features_'
+        self.feature_prefix = 'vgg_features_'
         self.label_prefix = 'labels_'
         self.train_set_name = 'train_singleobj.txt'
         self.test_set_name = 'test.txt'

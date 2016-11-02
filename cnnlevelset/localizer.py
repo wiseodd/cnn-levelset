@@ -61,11 +61,11 @@ class Localizer(object):
             conv_feature = Flatten()(base_model.output)
 
             # Classification head
-            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
+            x = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
             cls_head = Dense(20, activation='softmax', name='cls')(x)
 
             # Regression head
-            x = Dense(1024, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
+            x = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_feature)
             reg_head = Dense(4, activation='linear', name='reg')(x)
 
             self.model = Model(input=base_model.input, output=[cls_head, reg_head])

@@ -5,6 +5,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2
 from keras.layers.normalization import BatchNormalization
 from keras.callbacks import ModelCheckpoint, TensorBoard, LearningRateScheduler
 from keras.regularizers import l2
+from keras.optimizers import SGD
 from cnnlevelset.pascalvoc_util import PascalVOC
 from cnnlevelset.config import *
 from cnnlevelset.generator import pascal_datagen, pascal_datagen_singleobj
@@ -22,8 +23,7 @@ def split_labels(y):
     y_reg = y[:, :, 1:]
     idxes = np.argmax(y_cls, axis=1)
     y_reg = y_reg[range(y.shape[0]), idxes]
-    # return [y_cls, y_reg]
-    return y_cls
+    return [y_cls, y_reg]
 
 
 def smooth_l1(x):
@@ -73,24 +73,16 @@ inputs = Input(shape=(X_train.shape[1:]))
 conv_features = Flatten()(inputs)
 
 h_cls = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
-cls_head = Dense(20, activation='softmax', name='cls')(h_cls)
+cls_head = Dense(20, activation='sigmoid', name='cls')(h_cls)
 
 h_reg = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
 reg_head = Dense(4, activation='linear', name='reg')(h_reg)
 
 model = Model(input=inputs, output=[cls_head, reg_head])
 model.compile(optimizer='adam',
-              loss={'cls': 'categorical_crossentropy', 'reg': reg_loss},
+              loss={'cls': 'binary_crossentropy', 'reg': reg_loss},
               loss_weights={'cls': 1., 'reg': 1.},
               metrics={'cls': 'accuracy'})
 
-# model = Model(input=inputs, output=cls_head)
-# model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-
-# model.fit(X_train, y_train,
-#           callbacks=[LearningRateScheduler(scheduler)],
-#           batch_size=64, nb_epoch=50, validation_data=(X_test, y_test))
-
-model.fit_generator(generator=pascal_datagen_singleobj(32),
-                    samples_per_epoch=4800,
-                    nb_epoch=20)
+model.fit(X_train, y_train,
+          batch_size=64, nb_epoch=50)

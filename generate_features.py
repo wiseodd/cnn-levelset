@@ -1,4 +1,5 @@
 from keras.applications.resnet50 import ResNet50
+from keras.applications.vgg16 import VGG16
 from keras.models import Model, load_model
 from keras.layers import Input, Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
@@ -12,10 +13,9 @@ import numpy as np
 import cnnlevelset.generator as gen
 
 
-inputs = Input(shape=(224, 224, 3))
-model = ResNet50(include_top=False, weights='imagenet', input_tensor=inputs)
+model = VGG16(weights='imagenet', include_top=False)
 
 generator = gen.pascal_datagen_singleobj(64, include_label=False, random=False)
 features = model.predict_generator(generator, gen.pascal.train_set.size)
 
-np.save('cnn_features_train.npy', features)
+np.save('vgg_features_train.npy', features)
