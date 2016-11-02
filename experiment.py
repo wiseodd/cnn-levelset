@@ -72,15 +72,16 @@ y_test = split_labels(y_test)
 inputs = Input(shape=(X_train.shape[1:]))
 conv_features = Flatten()(inputs)
 
-h_cls = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
-cls_head = Dense(20, activation='sigmoid', name='cls')(h_cls)
+x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
+x = Dropout(p=0.5)(x)
+cls_head = Dense(20, activation='softmax', name='cls')(h_cls)
 
-h_reg = Dense(512, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
-reg_head = Dense(4, activation='linear', name='reg')(h_reg)
+x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
+reg_head = Dense(4, activation='linear', name='reg')(x)
 
 model = Model(input=inputs, output=[cls_head, reg_head])
 model.compile(optimizer='adam',
-              loss={'cls': 'binary_crossentropy', 'reg': reg_loss},
+              loss={'cls': 'categorical_crossentropy', 'reg': reg_loss},
               loss_weights={'cls': 1., 'reg': 1.},
               metrics={'cls': 'accuracy'})
 
