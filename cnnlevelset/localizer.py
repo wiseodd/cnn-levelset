@@ -32,13 +32,13 @@ def reg_loss(y_true, y_pred):
 
 
 def scheduler(epoch):
-    if 0 <= epoch < 80:
+    if 0 <= epoch < 100:
         return 1e-3
 
-    if 80 <= epoch < 120:
+    if 100 <= epoch < 140:
         return 1e-4
 
-    if 120 <= epoch < 150:
+    if 140 <= epoch < 180:
         return 1e-5
 
     return 1e-6
@@ -48,43 +48,40 @@ class Localizer(object):
 
     custom_objs = {'reg_loss': reg_loss}
 
-    def __init__(self, load=False):
-        if load:
-            self.load_model()
+    def __init__(self, model_path=None):
+        if model_path is not None:
+            self.model = self.load_model(model_path)
         else:
             # VGG16 last conv features
             inputs = Input(shape=(7, 7, 512))
-
-            # Cls head
             x = Convolution2D(128, 1, 1)(inputs)
             x = Flatten()(x)
-            x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
-            x = Dropout(p=0.5)(x)
-            cls_head = Dense(20, activation='softmax', name='cls')(x)
+
+            # Cls head
+            h_cls = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
+            h_cls = Dropout(p=0.5)(h_cls)
+            cls_head = Dense(20, activation='softmax', name='cls')(h_cls)
 
             # Reg head
-            x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
-            reg_head = Dense(4, activation='linear', name='reg')(x)
+            h_reg = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
+            reg_head = Dense(80, activation='linear', name='reg')(h_reg)
 
             # Joint model
             self.model = Model(input=inputs, output=[cls_head, reg_head])
 
-    def train(self, X, y, val_split=0.1, optimizer='adam', nb_epoch=10):
+    def train(self, X, y, optimizer='adam', nb_epoch=200):
         self.model.compile(optimizer='adam',
                            loss={'cls': 'categorical_crossentropy', 'reg': reg_loss},
                            loss_weights={'cls': 1., 'reg': 1.},
                            metrics={'cls': 'accuracy'})
 
         callbacks = [ModelCheckpoint(MODEL_PATH),
-                     TensorBoard(),
                      LearningRateScheduler(scheduler)]
 
-        self.model.fit(X, y, batch_size=64, nb_epoch=80,
-                       validation_split=val_split,
-                       callbacks=callbacks)
+        self.model.fit(X, y, batch_size=32, nb_epoch=nb_epoch, callbacks=callbacks)
 
     def predict(self, X):
         return self.model.predict(X)
 
-    def load_model(self):
-        self.model = load_model(MODEL_PATH, custom_objects=self.custom_objs)
+    def load_model(self, model_path):
+        return load_model(model_path, custom_objects=self.custom_objs)

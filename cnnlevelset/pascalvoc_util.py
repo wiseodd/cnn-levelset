@@ -39,7 +39,7 @@ class PascalVOC(object):
         self.label_prefix = 'labels_'
         self.trainset_singleobj_name = 'train_singleobj.txt'
         self.trainset_multiobj_name = 'trainval.txt'
-        self.testset_name = 'test.txt'
+        self.testset_name = 'train.txt'  # HACK!
         self.train_singleobj, self.train_multiobj, self.test_set = self._load()
         self.mb_idx = 0
 
@@ -60,26 +60,39 @@ class PascalVOC(object):
             if self.mb_idx >= X.size:
                 self.mb_idx = 0
 
-        return self.load_images_annotations(mb)
+        return self.load_images(mb), self.load_annotations(mb)
 
-    def get_test_set(self, size, random=True):
+    def get_test_data(self, size, random=True):
         if random:
             imgs = self.test_set.sample(size)
         else:
             imgs = self.test_set.head(size)
 
-        return self.load_data(imgs)
+        print(imgs)
 
-    def load_images_annotations(self, img_names):
+        X_img = self.load_images(imgs)
+        X, y = self.load_features_test()
+
+        idxes = imgs.index.tolist()
+        X, y = X[idxes], y[idxes]
+
+        assert X_img.shape[0] == X.shape[0] == y.shape[0]
+
+        return X_img, X, y
+
+    def load_images(self, img_names):
         X = [transform.resize(io.imread(self._img_path(img)), self.img_size)
              for img
              in img_names[self.img_idx]]
 
+        return np.array(X)
+
+    def load_annotations(self, img_names):
         y = [np.column_stack(self.get_class_bbox(img))
              for img
              in img_names[self.img_idx]]
 
-        return np.array(X), np.array(y)
+        return np.array(y)
 
     def draw_bbox(self, img, bbox, color=[1, 0, 0], line_width=3):
         xmin, ymin, xmax, ymax = bbox

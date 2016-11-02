@@ -14,28 +14,17 @@ import matplotlib.pyplot as plt
 
 tf.python.control_flow_ops = tf
 
-m = 64
-nb_epoch = 20
-pascal = PascalVOC(voc_dir=cfg.PASCAL_PATH)
+nb_epoch = 200
+pascal = PascalVOC(voc_dir='/Users/wiseodd/Projects/VOCdevkit/VOC2012/')
 
 if len(sys.argv) > 1:
     if sys.argv[1] == 'test':
-        localizer = Localizer(load=True)
-        X_test, y_test = pascal.get_test_set(20, random=True)
+        X_img_test, X_test, y_test = pascal.get_test_data(10, random=True)
 
-        cls_preds, bbox_preds = model.predict(X_test)
+        localizer = Localizer(model_path='data/models/model_vgg_singleobj.h5')
+        cls_preds, bbox_preds = localizer.predict(X_test)
 
-        for img, y, cls_pred, bbox_pred in zip(X_test, y_test, cls_preds, bbox_preds):
-            # idxs = np.where(cls_pred > 0.4)[0]
-
-            # if idxs.size == 0:
-            #     continue
-
-            # labels = [pascal.idx2label[i] for i in idxs]
-            # bboxes = bbox_pred.reshape(20, 4)[idxs]
-
-            # print(labels)
-
+        for img, y, cls_pred, bbox_pred in zip(X_img_test, y_test, cls_preds, bbox_preds):
             label = pascal.idx2label[np.argmax(cls_pred)]
 
             print(label)
