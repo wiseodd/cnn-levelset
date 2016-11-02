@@ -58,6 +58,21 @@ class PascalVOC(object):
 
         return self.load_data(mb)
 
+    def next_image_minibatch(self, size, random=True, reset=False):
+        if random:
+            mb = self.train_set.sample(size)
+        else:
+            if reset:
+                self.mb_idx = 0
+
+            mb = self.train_set[self.mb_idx:self.mb_idx+size]
+            self.mb_idx += size
+
+            if self.mb_idx >= self.train_set.size:
+                self.mb_idx = 0
+
+        return self.load_data_raw(mb)
+
     def load_train_data(self):
         dataset_name = self.train_set_name.split('.')[0]
         X = np.load(self.feature_dir + self.feature_prefix + dataset_name + '.npy')

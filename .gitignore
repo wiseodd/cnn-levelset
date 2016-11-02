@@ -88,7 +88,7 @@ ENV/
 # Rope project settings
 .ropeproject
 
-data/model.h5
+data/models/
 data/MNIST_data
 data/features
 logs

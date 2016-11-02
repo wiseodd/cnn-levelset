@@ -63,20 +63,15 @@ def scheduler(epoch):
 
 pascal = PascalVOC('/Users/wiseodd/Projects/VOCdevkit/VOC2012/')
 
-X_train, y_train = pascal.load_train_data()
-X_test, y_test = pascal.load_test_data()
+inputs = Input(shape=(7, 7, 512))
 
-y_train = split_labels(y_train)
-y_test = split_labels(y_test)
-
-inputs = Input(shape=(X_train.shape[1:]))
-conv_features = Flatten()(inputs)
-
-x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
+x = Convolution2D(128, 1, 1)(inputs)
+x = Flatten()(x)
+x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
 x = Dropout(p=0.5)(x)
-cls_head = Dense(20, activation='softmax', name='cls')(h_cls)
+cls_head = Dense(20, activation='softmax', name='cls')(x)
 
-x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(conv_features)
+x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
 reg_head = Dense(4, activation='linear', name='reg')(x)
 
 model = Model(input=inputs, output=[cls_head, reg_head])
@@ -85,5 +80,10 @@ model.compile(optimizer='adam',
               loss_weights={'cls': 1., 'reg': 1.},
               metrics={'cls': 'accuracy'})
 
+X_train, y_train = pascal.load_train_data()
+y_train = split_labels(y_train)
+
 model.fit(X_train, y_train,
-          batch_size=64, nb_epoch=50)
+          batch_size=64, nb_epoch=80, validation_split=0.1)
+
+model.save('data/models/model_vgg_singleobj.h5')
