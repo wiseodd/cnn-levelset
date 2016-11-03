@@ -64,7 +64,8 @@ class Localizer(object):
 
             # Reg head
             h_reg = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
-            reg_head = Dense(80, activation='linear', name='reg')(h_reg)
+            h_reg = Dropout(p=0.5)(h_reg)
+            reg_head = Dense(4, activation='linear', name='reg')(h_reg)
 
             # Joint model
             self.model = Model(input=inputs, output=[cls_head, reg_head])
@@ -78,7 +79,7 @@ class Localizer(object):
         callbacks = [ModelCheckpoint(MODEL_PATH),
                      LearningRateScheduler(scheduler)]
 
-        self.model.fit(X, y, batch_size=32, nb_epoch=nb_epoch, callbacks=callbacks)
+        self.model.fit(X, y, batch_size=64, nb_epoch=nb_epoch, callbacks=callbacks)
 
     def predict(self, X):
         return self.model.predict(X)

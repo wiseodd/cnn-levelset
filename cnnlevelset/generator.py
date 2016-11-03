@@ -30,7 +30,7 @@ def pascal_datagen(mb_size, include_reg=True, flatten=False, separate_reg=True):
 
 def pascal_datagen_singleobj(mb_size, include_label=True, random=True):
     while True:
-        X, y = pascal.next_minibatch(size=mb_size, random=random)
+        X, y = pascal.next_image_minibatch(size=mb_size, random=random)
 
         if include_label:
             y_cls = y[:, :, 0]

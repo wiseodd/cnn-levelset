@@ -39,7 +39,7 @@ class PascalVOC(object):
         self.label_prefix = 'labels_'
         self.trainset_singleobj_name = 'train_singleobj.txt'
         self.trainset_multiobj_name = 'trainval.txt'
-        self.testset_name = 'train.txt'  # HACK!
+        self.testset_name = 'val.txt'
         self.train_singleobj, self.train_multiobj, self.test_set = self._load()
         self.mb_idx = 0
 
