@@ -14,11 +14,14 @@ def norm(x, axis=0):
 
 
 def curvature(f):
-    df = grad(f)
-    dfy, dfx = df
-    dfyy, dfyx = grad(dfy)
-    dfxy, dfxx = grad(dfx)
+    fy, fx = grad(f)
+    norm = np.sqrt(fx**2 + fy**2)
+    Nx = fx / (norm + 1e-8)
+    Ny = fy / (norm + 1e-8)
+    return div(Nx, Ny)
 
-    kappa = (dfxx*dfy**2 - 2*dfx*dfy*dfxy + dfyy*dfx**2) / (1. + norm(df)**3)
 
-    return kappa
+def div(fx, fy):
+    fyy, fyx = grad(fy)
+    fxy, fxx = grad(fx)
+    return fxx + fyy
