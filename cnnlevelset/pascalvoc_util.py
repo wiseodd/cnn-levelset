@@ -39,7 +39,7 @@ class PascalVOC(object):
         self.label_prefix = 'labels_'
         self.trainset_singleobj_name = 'train_singleobj.txt'
         self.trainset_multiobj_name = 'trainval.txt'
-        self.testset_name = 'val.txt'
+        self.testset_name = 'train_singleobj.txt'
         self.train_singleobj, self.train_multiobj, self.test_set = self._load()
         self.mb_idx = 0
 
@@ -76,7 +76,16 @@ class PascalVOC(object):
         idxes = imgs.index.tolist()
         X, y = X[idxes], y[idxes]
 
-        assert X_img.shape[0] == X.shape[0] == y.shape[0]
+        return X_img, X, y
+
+    def get_data_by_name(self, name):
+        imgs = self.test_set[self.test_set[0].isin(name)]
+
+        X_img = self.load_images(imgs)
+        X, y = self.load_features_test()
+
+        idxes = imgs.index.tolist()
+        X, y = X[idxes], y[idxes]
 
         return X_img, X, y
 

@@ -1,89 +1,36 @@
-from keras.applications.resnet50 import ResNet50
-from keras.models import Model, load_model, Sequential
-from keras.layers import Input, Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
-from keras.layers.normalization import BatchNormalization
-from keras.callbacks import ModelCheckpoint, TensorBoard, LearningRateScheduler
-from keras.regularizers import l2
-from keras.optimizers import SGD
+from skimage.io import imshow
 from cnnlevelset.pascalvoc_util import PascalVOC
-from cnnlevelset.config import *
-from cnnlevelset.generator import pascal_datagen, pascal_datagen_singleobj
+from cnnlevelset.localizer import Localizer
+from cnnlevelset.segmenter import *
 
-import keras.backend as K
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 tf.python.control_flow_ops = tf
 
-
-def split_labels(y):
-    y_cls = y[:, :, 0]
-    y_reg = y[:, :, 1:]
-    idxes = np.argmax(y_cls, axis=1)
-    y_reg = y_reg[range(y.shape[0]), idxes]
-    return [y_cls, y_reg]
-
-
-def smooth_l1(x):
-    x = tf.abs(x)
-
-    x = tf.select(
-        tf.less(x, 1),
-        tf.mul(tf.square(x), 0.5),
-        tf.sub(x, 0.5)
-    )
-
-    x = tf.reshape(x, shape=[-1, 4])
-    x = tf.reduce_sum(x, 1)
-
-    return x
-
-
-def reg_loss(y_true, y_pred):
-    return smooth_l1(y_true - y_pred)
-
-
-def scheduler(epoch):
-    if 0 <= epoch < 10:
-        return 1e-2
-
-    if 10 <= epoch < 20:
-        return 1e-3
-
-    if 20 <= epoch < 30:
-        return 1e-4
-
-    if 30 <= epoch < 40:
-        return 1e-5
-
-    return 1e-7
-
-
 pascal = PascalVOC('/Users/wiseodd/Projects/VOCdevkit/VOC2012/')
 
-inputs = Input(shape=(7, 7, 512))
+with open('data/test_segmentation.txt') as f:
+    names = f.read().split('\n')
 
-x = Convolution2D(128, 1, 1)(inputs)
-x = Flatten()(x)
-x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
-x = Dropout(p=0.5)(x)
-cls_head = Dense(20, activation='softmax', name='cls')(x)
+# X_img_test, X_test, y_test = pascal.get_test_data(1, random=True)
+X_img_test, X_test, y_test = pascal.get_data_by_name(names)
 
-x = Dense(256, activation='relu', W_regularizer=l2(l=0.01))(x)
-reg_head = Dense(4, activation='linear', name='reg')(x)
+localizer = Localizer(model_path='data/models/model_vgg_singleobj.h5')
+cls_preds, bbox_preds = localizer.predict(X_test)
 
-model = Model(input=inputs, output=[cls_head, reg_head])
-model.compile(optimizer='adam',
-              loss={'cls': 'categorical_crossentropy', 'reg': reg_loss},
-              loss_weights={'cls': 1., 'reg': 1.},
-              metrics={'cls': 'accuracy'})
+for img, y, cls_pred, bbox_pred in zip(X_img_test, y_test, cls_preds, bbox_preds):
+    label = pascal.idx2label[np.argmax(cls_pred)]
 
-X_train, y_train = pascal.load_train_data()
-y_train = split_labels(y_train)
+    print(label)
 
-model.fit(X_train, y_train,
-          batch_size=64, nb_epoch=80, validation_split=0.1)
+    img = img.reshape(224, 224, 3)
+    plt.imshow(pascal.draw_bbox(img, bbox_pred))
+    plt.show()
 
-model.save('data/models/model_vgg_singleobj.h5')
+    phi = phi_from_bbox(img[:, :, 0], bbox_pred)
+    levelset_segment(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80, print_after=None)
+
+    input()

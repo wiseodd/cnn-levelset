@@ -33,21 +33,6 @@ if len(sys.argv) > 1:
             imshow(pascal.draw_bbox(img, bbox_pred))
             plt.show()
 
-            ## Multi Objects
-            # idxs = np.where(cls_pred > 0.5)[0]
-
-            # if idxs.size == 0:
-            #     continue
-
-            # labels = [pascal.idx2label[i] for i in idxs]
-            # bboxes = bbox_pred.reshape(20, 4)[idxs]
-
-            # print(labels)
-
-            # for bbox in bboxes:
-            #     imshow(pascal.draw_bbox(img, bbox))
-            #     plt.show()
-
     sys.exit(0)
 
 X_train, y_train = pascal.load_features_train_singleobj()
@@ -56,7 +41,6 @@ y_cls = y_train[:, :, 0]
 y_reg = y_train[:, :, 1:]
 idxes = np.argmax(y_cls, axis=1)
 y_reg = y_reg[range(y_train.shape[0]), idxes]
-# y_reg = y_reg.reshape(y_train.shape[0], -1)
 y_train = [y_cls, y_reg]
 
 localizer = Localizer()
