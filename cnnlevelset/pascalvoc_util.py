@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 import xmltodict
-from skimage import io
-from skimage import transform
-from skimage import draw
+from skimage import io, transform, color, draw
 from collections import defaultdict
 
 
@@ -33,20 +31,19 @@ class PascalVOC(object):
         self.imageset_dir = './data/'
         self.img_dir = voc_dir + '/JPEGImages'
         self.bbox_dir = voc_dir + '/Annotations'
+        self.segmentation_dir = voc_dir + '/SegmentationObject'
         self.feature_dir = './data/features/'
         self.label_dir = './data/labels/'
         self.feature_prefix = 'vgg_features_'
         self.label_prefix = 'labels_'
-        self.trainset_singleobj_name = 'train_singleobj.txt'
-        self.trainset_multiobj_name = 'trainval.txt'
-        self.testset_name = 'train_singleobj.txt'
-        self.train_singleobj, self.train_multiobj, self.test_set = self._load()
+        self.trainset_name = 'segmentation_train.txt'
+        self.testset_name = 'segmentation_test.txt'
+        self.dataset_name = 'train_singleobj.txt'
+        self.trainset, self.testset, self.dataset = self._load()
         self.mb_idx = 0
 
-    def next_image_minibatch(self, size, random=True, reset=False, mode='single'):
-        assert mode in ('single', 'multi')
-
-        X = self.train_singleobj if mode == 'single' else self.train_multiobj
+    def next_image_minibatch(self, size, random=True, reset=False):
+        X = self.trainset
 
         if random:
             mb = X.sample(size)
@@ -71,7 +68,7 @@ class PascalVOC(object):
         print(imgs)
 
         X_img = self.load_images(imgs)
-        X, y = self.load_features_test()
+        X, y = self.load_features_testset()
 
         idxes = imgs.index.tolist()
         X, y = X[idxes], y[idxes]
@@ -82,7 +79,7 @@ class PascalVOC(object):
         imgs = self.test_set[self.test_set[0].isin(name)]
 
         X_img = self.load_images(imgs)
-        X, y = self.load_features_test()
+        X, y = self.load_features_testset()
 
         idxes = imgs.index.tolist()
         X, y = X[idxes], y[idxes]
@@ -100,6 +97,21 @@ class PascalVOC(object):
         y = [np.column_stack(self.get_class_bbox(img))
              for img
              in img_names[self.img_idx]]
+
+        return np.array(y)
+
+    def load_segmentation_label(self):
+        return np.load(self.label_dir + 'labels_segmentation.npy')
+
+    def load_segmentation_label_from_imgs(self, img_names):
+        def preprocess(img_name):
+            img = io.imread(self.segmentation_dir + '/' + img_name + '.png')
+            img = transform.resize(img, self.img_size)
+            img = color.rgb2grey(img)
+            img[img != 0] = 1.
+            return img
+
+        y = [preprocess(img) for img in img_names[self.img_idx]]
 
         return np.array(y)
 
@@ -153,14 +165,18 @@ class PascalVOC(object):
 
         return clses, bboxes
 
-    def load_features_train_singleobj(self):
-        return self._load_features(self.trainset_singleobj_name)
+    def load_features_trainset(self):
+        return self._load_features(self.trainset_name)
 
-    def load_features_train_multiobj(self):
-        return self._load_features(self.trainset_multiobj_name)
-
-    def load_features_test(self):
+    def load_features_testset(self):
         return self._load_features(self.testset_name)
+
+    def load_features_dataset(self):
+        return self._load_features(self.dataset_name)
+
+    def segmentation_accuracy(self, y_pred, y_true):
+        assert y_pred.shape == y_true.shape
+        return (y_pred == y_true).sum() / y_pred.size
 
     def _load_features(self, dataset_name):
         dataset_name = dataset_name.split('.')[0]
@@ -169,11 +185,11 @@ class PascalVOC(object):
         return X, y
 
     def _load(self):
-        train_singleobj = self._read_dataset(self.imageset_dir + self.trainset_singleobj_name)
-        train_multiobj = self._read_dataset(self.imageset_dir + self.trainset_multiobj_name)
+        train = self._read_dataset(self.imageset_dir + self.trainset_name)
         test = self._read_dataset(self.imageset_dir + self.testset_name)
+        dataset = self._read_dataset(self.imageset_dir + self.dataset_name)
 
-        return train_singleobj, train_multiobj, test
+        return train, test, dataset
 
     def _read_dataset(self, filename):
         return pd.read_csv(filename, header=None, delim_whitespace=True)
