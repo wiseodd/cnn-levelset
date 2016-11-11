@@ -32,13 +32,13 @@ def reg_loss(y_true, y_pred):
 
 
 def scheduler(epoch):
-    if 0 <= epoch < 100:
+    if 0 <= epoch < 75:
         return 1e-3
 
-    if 100 <= epoch < 140:
+    if 75 <= epoch < 120:
         return 1e-4
 
-    if 140 <= epoch < 180:
+    if 120 <= epoch < 140:
         return 1e-5
 
     return 1e-6
@@ -79,7 +79,12 @@ class Localizer(object):
         callbacks = [ModelCheckpoint(MODEL_PATH),
                      LearningRateScheduler(scheduler)]
 
-        self.model.fit(X, y, batch_size=64, nb_epoch=nb_epoch, callbacks=callbacks)
+        import pickle
+
+        history = self.model.fit(X, y, batch_size=64, nb_epoch=nb_epoch, callbacks=callbacks)
+
+        with open('data/training_log_DCLSM.bin', 'wb') as f:
+            pickle.dump(history.history, f)
 
     def predict(self, X):
         return self.model.predict(X)

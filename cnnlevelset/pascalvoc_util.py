@@ -61,11 +61,9 @@ class PascalVOC(object):
 
     def get_test_data(self, size, random=True):
         if random:
-            imgs = self.test_set.sample(size)
+            imgs = self.testset.sample(size)
         else:
-            imgs = self.test_set.head(size)
-
-        print(imgs)
+            imgs = self.testset.head(size)
 
         X_img = self.load_images(imgs)
         X, y = self.load_features_testset()
@@ -73,7 +71,9 @@ class PascalVOC(object):
         idxes = imgs.index.tolist()
         X, y = X[idxes], y[idxes]
 
-        return X_img, X, y
+        y_seg = self.load_segmentation_label()
+
+        return X_img, X, y, y_seg
 
     def get_data_by_name(self, name):
         imgs = self.test_set[self.test_set[0].isin(name)]
@@ -175,8 +175,7 @@ class PascalVOC(object):
         return self._load_features(self.dataset_name)
 
     def segmentation_accuracy(self, y_pred, y_true):
-        assert y_pred.shape == y_true.shape
-        return (y_pred == y_true).sum() / y_pred.size
+        return np.mean(y_pred == y_true)
 
     def _load_features(self, dataset_name):
         dataset_name = dataset_name.split('.')[0]

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 tf.python.control_flow_ops = tf
 
-nb_epoch = 200
+nb_epoch = 160
 pascal = PascalVOC(voc_dir='/home/lab_sd/Projects/VOCdevkit/VOC2012/')
 
 if len(sys.argv) > 1:
@@ -35,7 +35,7 @@ if len(sys.argv) > 1:
 
     sys.exit(0)
 
-X_train, y_train = pascal.load_features_train_singleobj()
+X_train, y_train = pascal.load_features_trainset()
 
 y_cls = y_train[:, :, 0]
 y_reg = y_train[:, :, 1:]
