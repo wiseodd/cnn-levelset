@@ -108,7 +108,7 @@ class PascalVOC(object):
             img = io.imread(self.segmentation_dir + '/' + img_name + '.png')
             img = transform.resize(img, self.img_size)
             img = color.rgb2grey(img)
-            img[img != 0] = 1.
+            img = (img != 0)
             return img
 
         y = [preprocess(img) for img in img_names[self.img_idx]]
@@ -176,6 +176,22 @@ class PascalVOC(object):
 
     def segmentation_accuracy(self, y_pred, y_true):
         return np.mean(y_pred == y_true)
+
+    def segmentation_precision(self, y_pred, y_true):
+        tp = np.sum(y_pred == y_true)
+        fp = np.sum(y_pred & ~y_true)
+        return tp / (tp + fp)
+
+    def segmentation_recall(self, y_pred, y_true):
+        tp = np.sum(y_pred == y_true)
+        fn = np.sum(~y_pred & y_true)
+        return tp / (tp + fn)
+
+    def segmentation_prec_rec_f1(self, y_pred, y_true):
+        p = self.segmentation_precision(y_pred, y_true)
+        r = self.segmentation_recall(y_pred, y_true)
+        f1 = 2 * p * r / (p + r)
+        return p, r, f1
 
     def _load_features(self, dataset_name):
         dataset_name = dataset_name.split('.')[0]
