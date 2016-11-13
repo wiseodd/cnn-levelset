@@ -17,7 +17,7 @@ X_img_test, X_test, y_test, y_seg = pascal.get_test_data(10000, False)
 
 cls_y_test = y_test[:, :, 0]
 
-localizer = Localizer(model_path='data/models/model_checkpoint.h5')
+localizer = Localizer(model_path='data/models/model_vgg_singleobj.h5')
 cls_preds, bbox_preds = localizer.predict(X_test)
 
 cls_acc = np.mean(np.argmax(cls_preds, axis=1) == np.argmax(cls_y_test, axis=1))
