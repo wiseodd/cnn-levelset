@@ -4,6 +4,7 @@ CNN Level Set for image segmentation.
 ### Prerequisite
 
 1. Pascal VOC 2012 dataset, download from: <http://host.robots.ox.ac.uk/pascal/VOC/voc2012/#devkit>
+2. Pre-trained models and VGG features; [download from here](https://drive.google.com/open?id=0BzFf_WMmDYN8dUdYZE9iMEZXS0k), then put it in the main project directory
 
 ### Setup
 
