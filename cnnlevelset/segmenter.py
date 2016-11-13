@@ -8,7 +8,7 @@ from scipy.ndimage.filters import gaussian_gradient_magnitude
 
 
 def default_phi(x):
-    phi = np.ones_like(x)
+    phi = np.ones(x.shape[:2])
     phi[5:-5, 5:-5] = -1.
     return phi
 
@@ -22,7 +22,7 @@ def phi_from_bbox(img, bbox):
     ymin = int(round(ymin * h))
     ymax = int(round(ymax * h))
 
-    phi = np.ones_like(img)
+    phi = np.ones(img.shape[:2])
     phi[ymin:ymax, xmin:xmax] = -1
 
     return phi
@@ -40,10 +40,6 @@ def levelset_segment(img, phi=None, dt=1, v=1, sigma=1, alpha=1, n_iter=1000, pr
 
     g = stopping_fun(img_smooth, alpha)
     dg = op.grad(g)
-
-    plt.imshow(g, cmap='Greys_r')
-    plt.show()
-    print(g.min(), g.max())
 
     if phi is None:
         phi = default_phi(img)
@@ -70,9 +66,12 @@ def levelset_segment(img, phi=None, dt=1, v=1, sigma=1, alpha=1, n_iter=1000, pr
             plt.hold(False)
             plt.show()
 
-    plt.imshow(img_ori, cmap='Greys_r')
-    plt.hold(True)
-    plt.contour(phi, 0, colors='r', linewidths=[3])
-    plt.draw()
-    plt.hold(False)
-    plt.show()
+    if print_after is not None:
+        plt.imshow(img_ori, cmap='Greys_r')
+        plt.hold(True)
+        plt.contour(phi, 0, colors='r', linewidths=[3])
+        plt.draw()
+        plt.hold(False)
+        plt.show()
+
+    return (phi < 0)
