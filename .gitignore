@@ -89,6 +89,6 @@ ENV/
 .ropeproject
 
 data/models/
-data/MNIST_data
-data/features
+data/features/
+data/labels/
 logs
