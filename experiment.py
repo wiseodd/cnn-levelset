@@ -2,6 +2,7 @@ from skimage.io import imshow
 from cnnlevelset.pascalvoc_util import PascalVOC
 from cnnlevelset.localizer import Localizer
 from cnnlevelset.segmenter import *
+from cnnlevelset import config as cfg
 from collections import defaultdict
 
 import tensorflow as tf
@@ -11,13 +12,13 @@ import matplotlib.pyplot as plt
 
 tf.python.control_flow_ops = tf
 
-pascal = PascalVOC('/Users/wiseodd/Projects/VOCdevkit/VOC2012/')
+pascal = PascalVOC(cfg.PASCAL_PATH)
 
 X_img_test, X_test, y_test, y_seg = pascal.get_test_data(10000, False)
 
 cls_y_test = y_test[:, :, 0]
 
-localizer = Localizer(model_path='data/models/model_vgg_singleobj.h5')
+localizer = Localizer(model_path=cfg.MODEL_PATH)
 cls_preds, bbox_preds = localizer.predict(X_test)
 
 cls_acc = np.mean(np.argmax(cls_preds, axis=1) == np.argmax(cls_y_test, axis=1))

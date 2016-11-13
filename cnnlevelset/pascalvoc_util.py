@@ -28,18 +28,17 @@ class PascalVOC(object):
 
     def __init__(self, voc_dir):
         self.voc_dir = voc_dir.rstrip('/')
-        self.imageset_dir = './data/'
-        self.img_dir = voc_dir + '/JPEGImages'
-        self.bbox_dir = voc_dir + '/Annotations'
-        self.segmentation_dir = voc_dir + '/SegmentationObject'
+        self.imageset_dir = './data/dataset/'
+        self.img_dir = voc_dir + '/JPEGImages/'
+        self.bbox_dir = voc_dir + '/Annotations/'
+        self.segmentation_dir = voc_dir + '/SegmentationObject/'
         self.feature_dir = './data/features/'
         self.label_dir = './data/labels/'
         self.feature_prefix = 'vgg_features_'
         self.label_prefix = 'labels_'
         self.trainset_name = 'segmentation_train.txt'
         self.testset_name = 'segmentation_test.txt'
-        self.dataset_name = 'train_singleobj.txt'
-        self.trainset, self.testset, self.dataset = self._load()
+        self.trainset, self.testset = self._load()
         self.mb_idx = 0
 
     def next_image_minibatch(self, size, random=True, reset=False):
@@ -171,9 +170,6 @@ class PascalVOC(object):
     def load_features_testset(self):
         return self._load_features(self.testset_name)
 
-    def load_features_dataset(self):
-        return self._load_features(self.dataset_name)
-
     def segmentation_accuracy(self, y_pred, y_true):
         return np.mean(y_pred == y_true)
 
@@ -202,9 +198,7 @@ class PascalVOC(object):
     def _load(self):
         train = self._read_dataset(self.imageset_dir + self.trainset_name)
         test = self._read_dataset(self.imageset_dir + self.testset_name)
-        dataset = self._read_dataset(self.imageset_dir + self.dataset_name)
-
-        return train, test, dataset
+        return train, test
 
     def _read_dataset(self, filename):
         return pd.read_csv(filename, header=None, delim_whitespace=True)
