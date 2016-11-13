@@ -58,7 +58,7 @@ def levelset_segment(img, phi=None, dt=1, v=1, sigma=1, alpha=1, n_iter=1000, pr
         # Solve level set geodesic equation PDE
         phi = phi + dt * dphi_t
 
-        if print_after is not None and i % print_after == 0:
+        if print_after is not None and i != 0 and i % print_after == 0:
             plt.imshow(img_ori, cmap='Greys_r')
             plt.hold(True)
             plt.contour(phi, 0, colors='r', linewidths=[3])
