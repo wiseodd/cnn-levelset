@@ -70,10 +70,10 @@ for img, y, cls_pred, bbox_pred, ys in zip(X_img_test, y_test, cls_preds, bbox_p
         cnn_res['recall'].append(r)
         cnn_res['f1'].append(f1)
 
-        i += 1
-        print(i)
+    i += 1
+    print(i)
 
-if show:
+if not show:
     for metric in ['accuracy', 'precision', 'recall', 'f1']:
         print(metric)
         print('----------------')

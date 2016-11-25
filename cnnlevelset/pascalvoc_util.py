@@ -174,19 +174,19 @@ class PascalVOC(object):
         return np.mean(y_pred == y_true)
 
     def segmentation_precision(self, y_pred, y_true):
-        tp = np.sum(y_pred == y_true)
-        fp = np.sum(y_pred & ~y_true)
-        return tp / (tp + fp)
+        tp = np.sum(y_true & y_pred)
+        fp = np.sum(~y_true & y_pred)
+        return tp / (tp + fp + 1e-8)
 
     def segmentation_recall(self, y_pred, y_true):
-        tp = np.sum(y_pred == y_true)
-        fn = np.sum(~y_pred & y_true)
-        return tp / (tp + fn)
+        tp = np.sum(y_true & y_pred)
+        fn = np.sum(y_true & ~y_pred)
+        return tp / (tp + fn + 1e-8)
 
     def segmentation_prec_rec_f1(self, y_pred, y_true):
         p = self.segmentation_precision(y_pred, y_true)
         r = self.segmentation_recall(y_pred, y_true)
-        f1 = 2 * p * r / (p + r)
+        f1 = 2 * p * r / (p + r + 1e-8)
         return p, r, f1
 
     def _load_features(self, dataset_name):
