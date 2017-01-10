@@ -42,7 +42,7 @@ for img, y, cls_pred, bbox_pred, ys in zip(X_img_test, y_test, cls_preds, bbox_p
         plt.show()
 
         phi = phi_from_bbox(img, bbox_pred)
-        levelset_segment(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80, print_after=80)
+        levelset_segment_theano(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80, print_after=80)
 
         input()
     else:
@@ -55,7 +55,7 @@ for img, y, cls_pred, bbox_pred, ys in zip(X_img_test, y_test, cls_preds, bbox_p
         bbox_res['f1'].append(f1)
 
         phi = default_phi(img)
-        mask = levelset_segment(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80)
+        mask = levelset_segment_theano(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80)
         border_res['accuracy'].append(pascal.segmentation_accuracy(mask, ys))
         p, r, f1 = pascal.segmentation_prec_rec_f1(mask, ys)
         border_res['precision'].append(p)
@@ -63,7 +63,7 @@ for img, y, cls_pred, bbox_pred, ys in zip(X_img_test, y_test, cls_preds, bbox_p
         border_res['f1'].append(f1)
 
         phi = phi_from_bbox(img, bbox_pred)
-        mask = levelset_segment(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80)
+        mask = levelset_segment_theano(img, phi=phi, sigma=5, v=1, alpha=100000, n_iter=80)
         cnn_res['accuracy'].append(pascal.segmentation_accuracy(mask, ys))
         p, r, f1 = pascal.segmentation_prec_rec_f1(mask, ys)
         cnn_res['precision'].append(p)
