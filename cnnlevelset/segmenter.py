@@ -80,14 +80,15 @@ def levelset_segment(img, phi=None, dt=1, v=1, sigma=1, alpha=1, n_iter=80, prin
     return (phi < 0)
 
 
-def _grad(mat):
-    n = 224
-    idx1 = list(range(1, n)) + [n-1]
-    idx2 = [0] + list(range(0, n-1))
-    h = [1] + (n-2) * [2] + [1]
+n = 224
+idx1 = th.shared(np.array(list(range(1, n)) + [n-1], dtype='int32'), name='idx1')
+idx2 = th.shared(np.array([0] + list(range(0, n-1)), dtype='int32'), name='idx2')
+h = th.shared(np.array([1] + (n-2) * [0.5] + [1], dtype='float32'), name='h')
 
-    grad_y = (mat[idx1, :] - mat[idx2, :]) / h
-    grad_x = (mat[:, idx1] - mat[:, idx2]) / h
+
+def _grad(mat):
+    grad_y = (mat[idx1, :] - mat[idx2, :]) * h
+    grad_x = (mat[:, idx1] - mat[:, idx2]) * h
 
     # Ret shape: 2x224x224
     return T.stack([grad_y, grad_x], axis=0)
@@ -152,7 +153,9 @@ results, updates = th.scan(fn=lsm_step,
 
 final_phi = results[-1]
 
-levelset_evolution = th.function(inputs=[img, phi, dt, v, alpha, n_iter], outputs=final_phi, updates=updates)
+levelset_evolution = th.function(inputs=[img, phi, dt, v, alpha, n_iter],
+                                 outputs=final_phi, updates=updates,
+                                 allow_input_downcast=True)
 
 
 def levelset_segment_theano(img, phi=None, dt=1, v=1, sigma=1, alpha=1, n_iter=80):
