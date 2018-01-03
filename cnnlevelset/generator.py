@@ -1,9 +1,10 @@
 from .pascalvoc_util import PascalVOC
+from cnnlevelset import config as cfg
 
 import numpy as np
 
 
-pascal = PascalVOC(voc_dir='/home/lab_sd/Projects/VOCdevkit/VOC2012')
+pascal = PascalVOC(voc_dir=cfg.PASCAL_PATH)
 
 
 def pascal_datagen(mb_size, include_reg=True, flatten=False, separate_reg=True):

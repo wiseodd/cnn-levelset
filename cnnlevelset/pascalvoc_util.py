@@ -11,7 +11,7 @@ class PascalVOC(object):
 
     Arguments
     ---------
-        voc_idr: string
+        voc_dir: string
             Indicating path of the Pascal VOC devkit.
     """
 

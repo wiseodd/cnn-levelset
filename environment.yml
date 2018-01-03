@@ -9,4 +9,4 @@ dependencies:
 - h5py
 - pip:
     - xmltodict
-    - keras
+    - keras==1.1.1

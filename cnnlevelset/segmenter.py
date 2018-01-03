@@ -1,3 +1,6 @@
+"""
+Image segmenter using Level Set Method given the initial bounding box.
+"""
 import numpy as np
 import scipy.ndimage
 import scipy.signal
